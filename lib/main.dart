@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/routes.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://ogslnmrggqbjxmntotnx.supabase.co',
+    anonKey: 'sb_publishable_ImFJLCIHiEVM9PI5-PKHIQ_yfcnJqd1',
+  );
+
   runApp(const AeroQuestApp());
 }
 
@@ -10,9 +18,9 @@ class AeroQuestApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
+      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }
