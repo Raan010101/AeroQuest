@@ -11,9 +11,6 @@ environment:
 
 dependencies:
   google_fonts: ^6.1.0
-  cloud_firestore: ^5.4.0
-  firebase_auth: ^5.2.0
-  firebase_core: ^3.4.0
   flutter:
     sdk: flutter
   shared_preferences: ^2.2.3
