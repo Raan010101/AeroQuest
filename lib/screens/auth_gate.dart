@@ -1,19 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dashboard_screen.dart';
+import 'student_dashboard.dart';
+import 'lecturer_dashboard.dart';
 import 'splash_screen.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
+  State<AuthGate> createState() => _AuthGateState();
+}
 
-    if (session != null) {
-      return const DashboardScreen();
-    } else {
+class _AuthGateState extends State<AuthGate> {
+  final supabase = Supabase.instance.client;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = supabase.auth.currentSession;
+
+    if (session == null) {
       return const SplashScreen();
     }
+
+    return FutureBuilder(
+      future: supabase
+          .from('profiles')
+          .select()
+          .eq('id', session.user.id)
+          .single(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final profile = snapshot.data as Map<String, dynamic>;
+
+        if (profile['role'] == 'lecturer') {
+          return const LecturerDashboard();
+        } else {
+          return const StudentDashboard();
+        }
+      },
+    );
   }
 }
