@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "cat-a-m1-air-law",
+    "title": "Module 1: Air Law",
+    "description": "Regulations, responsibilities, and compliance basics.",
+    "order_index": 1,
+    "estimated_minutes": 60,
+    "is_published": true
+  },
+  {
+    "slug": "cat-a-m2-ops",
+    "title": "Module 2: Operational Procedures",
+    "description": "Standard procedures and operational discipline.",
+    "order_index": 2,
+    "estimated_minutes": 60,
+    "is_published": true
+  },
+  {
+    "slug": "cat-a-m3-human",
+    "title": "Module 3: Human Factors",
+    "description": "Human performance, errors, and safety culture.",
+    "order_index": 3,
+    "estimated_minutes": 60,
+    "is_published": true
+  },
+  {
+    "slug": "cat-a-m4-meteo",
+    "title": "Module 4: Meteorology",
+    "description": "Weather basics that affect operations.",
+    "order_index": 4,
+    "estimated_minutes": 60,
+    "is_published": true
+  },
+  {
+    "slug": "cat-a-m5-comm",
+    "title": "Module 5: Communications",
+    "description": "Communication principles and best practices.",
+    "order_index": 5,
+    "estimated_minutes": 60,
+    "is_published": true
+  }
+]
