@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'modules_screen.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -22,7 +23,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Future<void> loadProfile() async {
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
     final data = await supabase
@@ -30,6 +30,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
         .select()
         .eq('id', user.id)
         .maybeSingle();
+
+    if (!mounted) return;
 
     setState(() {
       profile = data;
@@ -89,6 +91,23 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   Text(
                     "XP: ${profile!['xp']}",
                     style: const TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 28),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.school),
+                      label: const Text("Start Cat A Modules"),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ModulesScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
