@@ -64,38 +64,38 @@ class _AuthGateState extends State<AuthGate> {
     return inserted;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) return const SplashScreen();
+@override
+Widget build(BuildContext context) {
+  // Not logged in -> show welcome screen (login/register)
+  if (_session == null) return const SplashScreen();
 
-    // logged out -> go login
-    if (_session == null) return const LoginScreen();
+  // Logged in -> fetch profile -> route
+  return FutureBuilder<Map<String, dynamic>>(
+    future: _getProfile(_session!.user.id),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
 
-    // logged in -> fetch profile -> route
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _getProfile(_session!.user.id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SplashScreen();
-        }
-
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Text(
-                'Profile load failed: ${snapshot.error}',
-                textAlign: TextAlign.center,
-              ),
+      if (snapshot.hasError) {
+        return Scaffold(
+          body: Center(
+            child: Text(
+              'Profile load failed: ${snapshot.error}',
+              textAlign: TextAlign.center,
             ),
-          );
-        }
+          ),
+        );
+      }
 
-        final profile = snapshot.data!;
-        final role = (profile['role'] ?? 'student') as String;
+      final profile = snapshot.data!;
+      final role = (profile['role'] ?? 'student') as String;
 
-        if (role == 'lecturer') return const LecturerDashboard();
-        return const StudentDashboard();
-      },
-    );
-  }
+      if (role == 'lecturer') return const LecturerDashboard();
+      return const StudentDashboard();
+    },
+  );
+}
 }
