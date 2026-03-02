@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'student_dashboard.dart';
+import 'student_modules_screen.dart';
 import 'lecturer_dashboard.dart';
 import 'splash_screen.dart';
 import 'login_screen.dart'; // <-- change this to your real file
@@ -65,11 +65,13 @@ class _AuthGateState extends State<AuthGate> {
   }
 
 @override
+@override
 Widget build(BuildContext context) {
-  // Not logged in -> show welcome screen (login/register)
-  if (_session == null) return const SplashScreen();
+  // If no session -> show splash
+  if (_session == null) {
+    return const SplashScreen();
+  }
 
-  // Logged in -> fetch profile -> route
   return FutureBuilder<Map<String, dynamic>>(
     future: _getProfile(_session!.user.id),
     builder: (context, snapshot) {
@@ -79,15 +81,15 @@ Widget build(BuildContext context) {
         );
       }
 
+      // 🔥 If profile load fails, session is invalid -> sign out
       if (snapshot.hasError) {
-        return Scaffold(
-          body: Center(
-            child: Text(
-              'Profile load failed: ${snapshot.error}',
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
+        supabase.auth.signOut();
+        return const SplashScreen();
+      }
+
+      if (!snapshot.hasData) {
+        supabase.auth.signOut();
+        return const SplashScreen();
       }
 
       final profile = snapshot.data!;
@@ -97,5 +99,4 @@ Widget build(BuildContext context) {
       return const StudentDashboard();
     },
   );
-}
-}
+}}

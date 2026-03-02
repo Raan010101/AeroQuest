@@ -58,21 +58,42 @@ class _LessonsScreenState extends State<LessonsScreen> {
                 itemCount: lessons.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
-                  final l = lessons[index];
-                  final p = progressMap[l['id']] ?? {};
-                  final pct = (p['progress_pct'] ?? 0) as int;
+                  final lesson = lessons[index];
+                  final progress = progressMap[lesson['id']] ?? {};
+
+                  final bool isCompleted =
+                      progress['status'] == 'completed';
 
                   return ListTile(
-                    title: Text(l['title'] ?? ''),
-                    subtitle: Text('Progress: $pct%'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.push(
+                    title: Text(lesson['title'] ?? ''),
+                    subtitle: Text(
+                      isCompleted ? 'Completed' : 'Incomplete',
+                      style: TextStyle(
+                        color: isCompleted
+                            ? Colors.green
+                            : Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    trailing: isCompleted
+                        ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                        : const Icon(Icons.cancel,
+                            color: Colors.red),
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => LessonDetailScreen(lesson: l),
+                          builder: (_) =>
+                              LessonDetailScreen(lesson: lesson),
                         ),
                       );
+
+                      // Refresh progress when returning
+                      setState(() {
+                        _lessonsFuture =
+                            _service.fetchLessons(widget.moduleId);
+                      });
                     },
                   );
                 },
