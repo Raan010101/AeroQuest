@@ -1,0 +1,106 @@
+[
+  {
+    "module_slug": "cat-a-m1-air-law",
+    "slug": "cat-a-m1-l1-intro-airlaw",
+    "title": "Intro to Air Law",
+    "content_type": "reading",
+    "order_index": 1,
+    "estimated_minutes": 10,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "Overview of Air Law." } ] }
+  },
+  {
+    "module_slug": "cat-a-m1-air-law",
+    "slug": "cat-a-m1-l2-compliance",
+    "title": "Compliance Basics",
+    "content_type": "reading",
+    "order_index": 2,
+    "estimated_minutes": 12,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "Key compliance concepts." } ] }
+  },
+
+  {
+    "module_slug": "cat-a-m2-ops",
+    "slug": "cat-a-m2-l1-intro-ops",
+    "title": "Operational Procedures Overview",
+    "content_type": "reading",
+    "order_index": 1,
+    "estimated_minutes": 10,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "What procedures are and why they matter." } ] }
+  },
+  {
+    "module_slug": "cat-a-m2-ops",
+    "slug": "cat-a-m2-l2-checklists",
+    "title": "Checklists and Discipline",
+    "content_type": "reading",
+    "order_index": 2,
+    "estimated_minutes": 12,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "Using checklists correctly." } ] }
+  },
+
+  {
+    "module_slug": "cat-a-m3-human",
+    "slug": "cat-a-m3-l1-intro-human",
+    "title": "Human Factors Overview",
+    "content_type": "reading",
+    "order_index": 1,
+    "estimated_minutes": 10,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "How humans affect safety." } ] }
+  },
+  {
+    "module_slug": "cat-a-m3-human",
+    "slug": "cat-a-m3-l2-errors",
+    "title": "Errors and Mitigations",
+    "content_type": "reading",
+    "order_index": 2,
+    "estimated_minutes": 12,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "Common error types and prevention." } ] }
+  },
+
+  {
+    "module_slug": "cat-a-m4-meteo",
+    "slug": "cat-a-m4-l1-intro-meteo",
+    "title": "Meteorology Basics",
+    "content_type": "reading",
+    "order_index": 1,
+    "estimated_minutes": 10,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "Weather fundamentals." } ] }
+  },
+  {
+    "module_slug": "cat-a-m4-meteo",
+    "slug": "cat-a-m4-l2-clouds",
+    "title": "Clouds and Visibility",
+    "content_type": "reading",
+    "order_index": 2,
+    "estimated_minutes": 12,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "Cloud types and visibility impacts." } ] }
+  },
+
+  {
+    "module_slug": "cat-a-m5-comm",
+    "slug": "cat-a-m5-l1-intro-comm",
+    "title": "Communication Principles",
+    "content_type": "reading",
+    "order_index": 1,
+    "estimated_minutes": 10,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "Clear comms and standard phraseology." } ] }
+  },
+  {
+    "module_slug": "cat-a-m5-comm",
+    "slug": "cat-a-m5-l2-briefings",
+    "title": "Briefings and Handovers",
+    "content_type": "reading",
+    "order_index": 2,
+    "estimated_minutes": 12,
+    "is_published": true,
+    "content": { "sections": [ { "type": "text", "text": "Doing handovers properly." } ] }
+  }
+]

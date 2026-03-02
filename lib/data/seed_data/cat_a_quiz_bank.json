@@ -1,0 +1,13 @@
+[
+  {
+    "module_slug": "cat-a-m1-air-law",
+    "lesson_slug": "cat-a-m1-l1-intro-airlaw",
+    "topic_tag": "airlaw",
+    "difficulty": 1,
+    "question_text": "Why is Air Law important?",
+    "options": ["It sets rules for safe operations", "It is only for airports", "It replaces procedures", "It is optional"],
+    "correct_answer": ["It sets rules for safe operations"],
+    "explanation": "Air Law defines rules and responsibilities to support safe and compliant operations.",
+    "is_published": true
+  }
+]
