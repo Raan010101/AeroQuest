@@ -31,3 +31,4 @@ flutter:
     # Add assets from the images directory to the application.
     - assets/images/plane.png
     - assets/images/logo.png
+    - assets/images/icon-logo.png

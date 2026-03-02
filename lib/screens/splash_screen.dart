@@ -154,7 +154,9 @@
 import 'package:flutter/material.dart';
 import '../../core/routes.dart';
 import 'liquid_silver_background.dart';
-
+late AnimationController _controller;
+late Animation<double> _fadeAnimation;
+late Animation<Offset> _slideAnimation;
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -261,45 +263,43 @@ class _SplashScreenState extends State<SplashScreen>
             },
           ),
 
-          // ✨ TEXT COMES FROM BELOW
-          Center(
-            child: AnimatedBuilder(
-              animation: _textController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _textOpacity.value,
-                  child: Transform.translate(
-                    offset: Offset(0, _textPosition.value),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "AEROQUEST",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 4,
-                            color: Colors.white,
+          // ✨ LOGO COMES FROM BELOW (BIG & PREMIUM)
+                AnimatedBuilder(
+                  animation: _textController,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _textOpacity.value,
+                      child: Transform.translate(
+                        offset: Offset(0, _textPosition.value),
+                        child: Align(
+                          alignment: const Alignment(0, -0.05),
+                          child: FractionallySizedBox(
+                            widthFactor: 0.95,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  "assets/images/logo.png",
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  "EDUCATION. REVOLUTION.",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    letterSpacing: 3,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        SizedBox(height: 10),
-                        Text(
-                          "EDUCATION. REVOLUTION.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            letterSpacing: 2,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+                      ),
+                    );
+                  },
+                ),
 
           // 🚀 BUTTONS
           Positioned(
