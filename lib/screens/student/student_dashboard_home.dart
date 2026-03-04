@@ -37,9 +37,9 @@ class StudentDashboardScreen extends StatefulWidget {
   @override
   State<StudentDashboardScreen> createState() => _StudentDashboardScreenState();
 }
-class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
+class _StudentDashboardScreenState extends State<StudentDashboardScreen> with WidgetsBindingObserver {
   final _supabase = Supabase.instance.client;
-
+  late final RealtimeChannel profileChannel;
   int xp = 0;
   int streakDays = 0;
   int progressPct = 0;
@@ -48,30 +48,67 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
   bool loading = true;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void didChangeAppLifecycleState(AppLifecycleState state) {
+  if (state == AppLifecycleState.resumed) {
     _loadDashboard();
   }
+}
+
+@override
+void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadDashboard();
+    _subscribeToProfile();
+}
+
+void _subscribeToProfile() {
+  final user = _supabase.auth.currentUser;
+  if (user == null) return;
+
+  profileChannel = _supabase.channel('profile_updates')
+    ..onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'profiles',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'id',
+        value: user.id,
+      ),
+      callback: (payload) {
+        final data = payload.newRecord;
+
+        setState(() {
+          xp = data['xp_total'] ?? xp;
+          streakDays = data['streak_count'] ?? streakDays;
+          badgeLabel = data['rank_title'] ?? badgeLabel;
+        });
+      },
+    )
+    ..subscribe();
+}
 
   Future<void> _loadDashboard() async {
     try {
       final user = _supabase.auth.currentUser;
         if (user == null) return;
         final userId = user.id;
+        
 
       // Fetch profile
       final profile = await _supabase
           .from('profiles')
-          .select('xp, streak_days, badge')
-          .eq('id', userId)
+          .select('xp_total, streak_count, rank_title')
+          .eq('id', user.id)
           .single();
 
       // Fetch quests
       final questRes = await _supabase
-          .from('student_quests')
-          .select('code, title, subtitle, image_url, status')
-          .eq('student_id', userId);
+          .from('practical_quests')
+          .select('id, code, title, description, xp_reward, due_at, is_active')
+          .eq('is_active', true);
 
       final loadedQuests = (questRes as List).map((q) {
         final statusString = q['status'] as String;
@@ -82,20 +119,22 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           'expired' => QuestStatus.expired,
           _ => QuestStatus.locked,
         };
+        print("XP: ${profile['xp_total']}");
+        print("Streak: ${profile['streak_count']}");
 
         return QuestItem(
-          code: q['code'],
-          title: q['title'],
-          subtitle: q['subtitle'],
-          imageAsset: q['image_url'] ?? '',
-          status: status,
-        );
-      }).toList();
+            code: q['code'] ?? '',
+            title: q['title'] ?? '',
+            subtitle: q['description'] ?? '',
+            imageAsset: '', // no image column in DB
+            status: status,
+                );
+          }).toList();
 
       setState(() {
-        xp = profile['xp'] ?? 0;
-        streakDays = profile['streak_days'] ?? 0;
-        badgeLabel = profile['badge'] ?? "BEGINNER";
+        xp = profile['xp_total'] ?? 0;
+        streakDays = profile['streak_count'] ?? 0;
+        badgeLabel = profile['rank_title'] ?? "BEGINNER";
         quests = loadedQuests;
         progressPct = _calculateProgress(loadedQuests);
         loading = false;
@@ -104,6 +143,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       print("Dashboard error: $e");
       setState(() => loading = false);
     }
+    
   }
 
   int _calculateProgress(List<QuestItem> quests) {
@@ -214,9 +254,11 @@ return Scaffold(
                   icon: Icons.local_fire_department,
                   title: "Daily Streak",
                   subtitle: "Complete today’s quiz",
-                    onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.streak);
-                    },
+                  onTap: () async {
+                    await Navigator.pushNamed(context, AppRoutes.streak);
+                    await Future.delayed(const Duration(milliseconds: 300));
+                    await _loadDashboard();
+                  },
                 ),
               ),
             ],
@@ -288,6 +330,12 @@ return Scaffold(
 );
 
   }
+  
+@override
+void dispose() {
+  WidgetsBinding.instance.removeObserver(this);
+  super.dispose();
+}
 }
 
 /* ---------------- UI Pieces ---------------- */
@@ -415,6 +463,7 @@ class _StatsRow extends StatelessWidget {
   const _StatsRow({required this.xp, required this.streakDays, required this.progressPct});
 
   @override
+
   Widget build(BuildContext context) {
     return Row(
       children: [

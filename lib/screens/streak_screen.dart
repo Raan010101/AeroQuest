@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
 
 class StreakScreen extends StatefulWidget {
   const StreakScreen({super.key});
@@ -14,8 +15,12 @@ class _StreakScreenState extends State<StreakScreen> {
   bool loading = true;
   bool started = false;
   bool completed = false;
+  bool revealAnswer = false;
 
   int streakDays = 0;
+  int xpTotal = 0;
+
+
 
   List<Map<String, dynamic>> questions = [];
   int currentIndex = 0;
@@ -38,24 +43,28 @@ Future<void> _loadProfile() async {
 
     final profile = await _supabase
         .from('profiles')
-        .select('streak_days')
+        .select('streak_count, xp_total')
         .eq('id', user.id)
         .maybeSingle();
 
     setState(() {
-      streakDays = profile?['streak_days'] ?? 0;
+      streakDays = profile?['streak_count'] ?? 0;
+      xpTotal = profile?['xp_total'] ?? 0;
       loading = false;
     });
+
   } catch (e) {
     print("Streak load error: $e");
     setState(() => loading = false);
   }
+  
 }
+
 Future<void> _startQuiz() async {
   try {
     final res = await _supabase
         .from('questions')
-        .select()
+        .select('question_text, options, correct_answer, category')
         .limit(5);
 
     setState(() {
@@ -65,55 +74,90 @@ Future<void> _startQuiz() async {
       currentIndex = 0;
       correctCount = 0;
       selectedAnswer = null;
+      revealAnswer = false;
     });
   } catch (e) {
     print("Question load error: $e");
   }
 }
 
-  Future<void> _submitAnswer() async {
-    if (selectedAnswer == null) return;
+Future<void> _submitAnswer() async {
+  if (selectedAnswer == null) return;
 
-    final correctAnswer = questions[currentIndex]['correct_answer'];
+  final rawCorrect = questions[currentIndex]['correct_answer'];
+
+  Map correctData = rawCorrect is String
+      ? jsonDecode(rawCorrect)
+      : rawCorrect;
+
+  final correctAnswer = correctData['value'];
+
+  setState(() {
+    revealAnswer = true;
 
     if (selectedAnswer == correctAnswer) {
       correctCount++;
     }
+  });
 
-    if (currentIndex < questions.length - 1) {
-      setState(() {
-        currentIndex++;
-        selectedAnswer = null;
-      });
-    } else {
-      await _completeQuiz();
-    }
-  }
+  await Future.delayed(const Duration(milliseconds: 900));
 
-  Future<void> _completeQuiz() async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return;
+  if (!mounted) return;
 
-    final earnedPoints = correctCount * 5;
-
-    final profile = await _supabase
-        .from('profiles')
-        .select('xp, streak_days')
-        .eq('id', user.id)
-        .single();
-
-    await _supabase
-        .from('profiles')
-        .update({
-          'xp': (profile['xp'] ?? 0) + earnedPoints,
-          'streak_days': (profile['streak_days'] ?? 0) + 1,
-        })
-        .eq('id', user.id);
-
+  if (currentIndex < questions.length - 1) {
     setState(() {
-      completed = true;
+      currentIndex++;
+      selectedAnswer = null;
+      revealAnswer = false;
     });
+  } else {
+    await _completeQuiz();
   }
+  print("Selected: $selectedAnswer");
+  print("Correct: $correctAnswer");
+}
+
+Future<void> _completeQuiz() async {
+  final user = _supabase.auth.currentUser;
+  if (user == null) return;
+
+  final earnedPoints = correctCount * 5;
+
+  final profile = await _supabase
+      .from('profiles')
+      .select('xp_total, streak_count, streak_last_date')
+      .eq('id', user.id)
+      .single();
+
+  int xp = profile['xp_total'] ?? 0;
+  int streak = profile['streak_count'] ?? 0;
+  String? lastDate = profile['streak_last_date'];
+
+  final today = DateTime.now();
+  final todayStr = today.toIso8601String().substring(0, 10);
+
+if (lastDate == null) {
+  streak = 1;
+} else {
+  streak += 1; // demo mode: increase every quiz completion
+}
+
+  await _supabase.from('profiles').update({
+    'xp_total': xp + earnedPoints,
+    'streak_count': streak,
+    'streak_last_date': todayStr,
+  }).eq('id', user.id);
+  print("XP updated to: ${xp + earnedPoints}");
+
+await _loadProfile();
+
+if (!mounted) return;
+
+setState(() {
+  completed = true;
+  streakDays = streak;
+});
+}
 
   @override
 Widget build(BuildContext context) {
@@ -200,39 +244,99 @@ Widget build(BuildContext context) {
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.emoji_events,
-                  size: 70, color: Color(0xFFE1B04A)),
-              const SizedBox(height: 20),
-              const Text(
-                "Quiz Complete",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "$correctCount / ${questions.length} correct",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "+$earnedPoints XP",
-                style: const TextStyle(
-                  fontSize: 24,
-                  color: Color(0xFFE1B04A),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+children: [
+      Icon(
+        Icons.local_fire_department,
+        size: 80,
+        color: const Color(0xFFE1B04A),
+        shadows: [
+          BoxShadow(
+            color: const Color(0xFFE1B04A).withOpacity(0.6),
+            blurRadius: 25,
           ),
+        ],
+      ),
+
+  const SizedBox(height: 20),
+
+  const Text(
+    "Quiz Complete",
+    style: TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+
+  const SizedBox(height: 10),
+
+  Text(
+    "$correctCount / ${questions.length} correct",
+    style: TextStyle(
+      color: Colors.white.withOpacity(0.6),
+    ),
+  ),
+
+  const SizedBox(height: 12),
+
+  Text(
+    "+$earnedPoints XP",
+    style: const TextStyle(
+      fontSize: 24,
+      color: Color(0xFFE1B04A),
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+
+  const SizedBox(height: 16),
+
+  // 🔥 STREAK BADGE
+  Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(30),
+      border: Border.all(
+        color: const Color(0xFFE1B04A).withOpacity(0.4),
+      ),
+    ),
+    child: Text(
+      "🔥 $streakDays Day Streak",
+      style: const TextStyle(
+        color: Color(0xFFE1B04A),
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  ),
+
+  const SizedBox(height: 30),
+
+  // 🔵 BACK BUTTON
+  SizedBox(
+    width: double.infinity,
+    height: 50,
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF2F32FF),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
-    );
+      onPressed: () {
+        Navigator.pop(context);
+      },
+      child: const Text(
+        "BACK TO HOME",
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    ),
+  ),
+],
+        ),
+      ),
+    ),);
   }
 
   // ================= SAFETY CHECK =================
@@ -251,7 +355,13 @@ Widget build(BuildContext context) {
   // ================= QUIZ SCREEN =================
 final question = questions[currentIndex];
 final options = List<String>.from(question['options']);
-final correctAnswer = question['correct_answer'];
+final rawCorrect = question['correct_answer'];
+
+Map correctData = rawCorrect is String
+    ? jsonDecode(rawCorrect)
+    : rawCorrect;
+
+final correctAnswer = correctData['value'];
 
 return Scaffold(
   backgroundColor: const Color(0xFF0B1220),
@@ -341,31 +451,39 @@ return Scaffold(
 
               bool isSelected = selectedAnswer == option;
               bool isCorrectOption = option == correctAnswer;
-              bool showCorrect = selectedAnswer != null;
 
               Color borderColor = Colors.white.withOpacity(0.1);
               Color bgColor = const Color(0xFF141923);
 
-              if (showCorrect) {
+              if (revealAnswer) {
+
+                // correct answer
                 if (isCorrectOption) {
                   borderColor = const Color(0xFF3DDC84);
                   bgColor = const Color(0xFF1F3A2E);
-                } else if (isSelected) {
+                }
+
+                // wrong selected answer
+                else if (isSelected) {
                   borderColor = const Color(0xFFFF5A5A);
                   bgColor = const Color(0xFF3A1F1F);
                 }
-              } else if (isSelected) {
-                borderColor = const Color(0xFFE1B04A);
-              }
 
+              } else if (isSelected) {
+
+                // selected before reveal
+                borderColor = const Color(0xFFE1B04A);
+                bgColor = const Color(0xFF1C2433);
+
+            }
               return GestureDetector(
-                onTap: showCorrect
-                    ? null
-                    : () {
-                        setState(() {
-                          selectedAnswer = option;
-                        });
-                      },
+                onTap: revealAnswer
+                      ? null
+                      : () {
+                          setState(() {
+                            selectedAnswer = option;
+                          });
+                        },
                 child: Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 14),
