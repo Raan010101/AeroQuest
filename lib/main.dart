@@ -25,7 +25,7 @@ class AeroQuestApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: AppRoutes.dashboardHome,
+      initialRoute: AppRoutes.root,
       onGenerateRoute: AppRoutes.generateRoute,
       navigatorObservers: [routeObserver], // ✅ Works now
     );

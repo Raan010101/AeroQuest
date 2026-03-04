@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/learning_service.dart';
-import 'lessons_screen.dart';
+import '../../services/learning_service.dart';
+import '../lessons_screen.dart';
 
 class ModulesScreen extends StatefulWidget {
   const ModulesScreen({super.key});

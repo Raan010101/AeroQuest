@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/routes.dart';
 enum QuestStatus { locked, assigned, completed, expired }
 
 class QuestItem {
@@ -21,47 +22,107 @@ class QuestItem {
   bool get isTapEnabled => status == QuestStatus.assigned;
 }
 
-class StudentDashboardScreen extends StatelessWidget {
-  const StudentDashboardScreen({super.key});
+class StudentDashboardScreen extends StatefulWidget {
+  final String name;
+  final String idNumber;
+  final String role;
+
+  const StudentDashboardScreen({
+    super.key,
+    required this.name,
+    required this.idNumber,
+    required this.role,
+  });
+
+  @override
+  State<StudentDashboardScreen> createState() => _StudentDashboardScreenState();
+}
+class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
+  final _supabase = Supabase.instance.client;
+
+  int xp = 0;
+  int streakDays = 0;
+  int progressPct = 0;
+  String badgeLabel = "BEGINNER";
+  List<QuestItem> quests = [];
+
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    try {
+      final user = _supabase.auth.currentUser;
+        if (user == null) return;
+        final userId = user.id;
+
+      // Fetch profile
+      final profile = await _supabase
+          .from('profiles')
+          .select('xp, streak_days, badge')
+          .eq('id', userId)
+          .single();
+
+      // Fetch quests
+      final questRes = await _supabase
+          .from('student_quests')
+          .select('code, title, subtitle, image_url, status')
+          .eq('student_id', userId);
+
+      final loadedQuests = (questRes as List).map((q) {
+        final statusString = q['status'] as String;
+
+        QuestStatus status = switch (statusString) {
+          'assigned' => QuestStatus.assigned,
+          'completed' => QuestStatus.completed,
+          'expired' => QuestStatus.expired,
+          _ => QuestStatus.locked,
+        };
+
+        return QuestItem(
+          code: q['code'],
+          title: q['title'],
+          subtitle: q['subtitle'],
+          imageAsset: q['image_url'] ?? '',
+          status: status,
+        );
+      }).toList();
+
+      setState(() {
+        xp = profile['xp'] ?? 0;
+        streakDays = profile['streak_days'] ?? 0;
+        badgeLabel = profile['badge'] ?? "BEGINNER";
+        quests = loadedQuests;
+        progressPct = _calculateProgress(loadedQuests);
+        loading = false;
+      });
+    } catch (e) {
+      print("Dashboard error: $e");
+      setState(() => loading = false);
+    }
+  }
+
+  int _calculateProgress(List<QuestItem> quests) {
+    if (quests.isEmpty) return 0;
+    final completed =
+        quests.where((q) => q.status == QuestStatus.completed).length;
+    return ((completed / quests.length) * 100).round();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final quests = <QuestItem>[
-      const QuestItem(
-        code: "RIVET-01",
-        title: "Rivet Inspection",
-        subtitle: "Airframe Basics",
-        imageAsset: "assets/images/quest_rivet.jpg",
-        status: QuestStatus.locked,
-      ),
-      const QuestItem(
-        code: "ENG-02",
-        title: "Turbine Walkthrough",
-        subtitle: "Propulsion Systems",
-        imageAsset: "assets/images/quest_engine.jpg",
-        status: QuestStatus.assigned,
-      ),
-      const QuestItem(
-        code: "WING-03",
-        title: "Wing Structure Check",
-        subtitle: "Structures",
-        imageAsset: "assets/images/quest_wing.jpg",
-        status: QuestStatus.completed,
-      ),
-      const QuestItem(
-        code: "AERO-04",
-        title: "Boundary Layer Drill",
-        subtitle: "Aerodynamics",
-        imageAsset: "assets/images/quest_aero.jpg",
-        status: QuestStatus.locked,
-      ),
-    ];
+    
+if (loading) {
+  return const Scaffold(
+    backgroundColor: Color(0xFF070A12),
+    body: Center(child: CircularProgressIndicator()),
+  );
+}
 
-    // Example student stats (wire to Supabase later)
-    final xp = 0;
-    final streakDays = 0;
-    final progressPct = 0; // percent
-    final badgeLabel = "BEGINNER";
 
 return Scaffold(
   backgroundColor: const Color(0xFF070A12),
@@ -107,24 +168,30 @@ return Scaffold(
             child: ListView(
               padding: EdgeInsets.fromLTRB(  16,  10,  16,  16 + MediaQuery.of(context).padding.bottom + 72,),
               children: [
-          _TopBar(),
+              _TopBar(
+                onLogout: () async {
+                  await Supabase.instance.client.auth.signOut();
+                  if (!context.mounted) return;
+                  Navigator.pushNamedAndRemoveUntil(context, AppRoutes.root, (_) => false);
+                },
+              ),
           const SizedBox(height: 14),
-
-          _ProfileHeader(
-            name: "Raan Nyaana",
-            email: "nyanaputhraan@gmail.com",
-            badge: badgeLabel,
-          ),
+          
+            _ProfileHeader(
+              name: widget.name,
+              idNumber: widget.idNumber,
+              badge: badgeLabel,
+            ),
           const SizedBox(height: 14),
 
           _StatsRow(xp: xp, streakDays: streakDays, progressPct: progressPct),
           const SizedBox(height: 10),
 
           _RankProgress(
-            label: "Progress to Cadet",
-            progress: 0.0,
-            rightText: "0%",
-          ),
+              label: "Progress to Cadet",
+              progress: progressPct / 100,
+              rightText: "$progressPct%",
+            ),
           const SizedBox(height: 18),
 
           const _SectionTitle(title: "QUICK ACCESS"),
@@ -136,7 +203,9 @@ return Scaffold(
                   icon: Icons.qr_code_scanner,
                   title: "Scan Quest",
                   subtitle: "Scan QR code to start",
-                  onTap: () {},
+                  onTap: () {
+                              Navigator.pushNamed(context, "/qr-scan");
+                            },
                 ),
               ),
               const SizedBox(width: 12),
@@ -145,7 +214,9 @@ return Scaffold(
                   icon: Icons.local_fire_department,
                   title: "Daily Streak",
                   subtitle: "Complete today’s quiz",
-                  onTap: () {},
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRoutes.streak);
+                    },
                 ),
               ),
             ],
@@ -214,7 +285,6 @@ return Scaffold(
       ),
     ],
   ),
-  bottomNavigationBar: const _BottomNav(),
 );
 
   }
@@ -222,7 +292,11 @@ return Scaffold(
 
 /* ---------------- UI Pieces ---------------- */
 
-class _TopBar extends StatelessWidget {
+  class _TopBar extends StatelessWidget {
+  final Future<void> Function() onLogout;
+
+  const _TopBar({required this.onLogout});
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -241,9 +315,18 @@ class _TopBar extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        _IconSquare(
-          icon: Icons.notifications_none,
-          onTap: () {},
+        Row(
+          children: [
+            _IconSquare(
+              icon: Icons.notifications_none,
+              onTap: () {},
+            ),
+            const SizedBox(width: 10),
+            _IconSquare(
+              icon: Icons.logout,
+              onTap: () async => onLogout(),
+            ),
+          ],
         ),
       ],
     );
@@ -252,12 +335,12 @@ class _TopBar extends StatelessWidget {
 
 class _ProfileHeader extends StatelessWidget {
   final String name;
-  final String email;
+  final String idNumber;
   final String badge;
 
   const _ProfileHeader({
     required this.name,
-    required this.email,
+    required this.idNumber,
     required this.badge,
   });
 
@@ -289,7 +372,7 @@ class _ProfileHeader extends StatelessWidget {
               children: [
                 Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
-                Text(email, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.55))),
+                Text("ID: $idNumber", style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.55))),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -486,7 +569,7 @@ class _QuestCard extends StatelessWidget {
                   SizedBox(
                     height: 108,
                     width: double.infinity,
-                    child: Image.asset(
+                    child: Image.network(
                       quest.imageAsset,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
@@ -757,8 +840,30 @@ class _LeaderboardEmpty extends StatelessWidget {
   }
 }
 
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
+class BottomNav extends StatelessWidget {
+  final int currentIndex;
+
+  const BottomNav({super.key, required this.currentIndex});
+
+  void _navigate(BuildContext context, int index) {
+    if (index == currentIndex) return;
+
+    switch (index) {
+      case 0:
+        Navigator.pushNamedAndRemoveUntil(
+            context, "/", (route) => false);
+        break;
+      case 1:
+        Navigator.pushNamed(context, "/quests");
+        break;
+      case 2:
+        Navigator.pushNamed(context, "/learn");
+        break;
+      case 3:
+        Navigator.pushNamed(context, "/streak");
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -768,24 +873,40 @@ class _BottomNav extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            height: 62,
-            decoration: BoxDecoration(
-              color: const Color(0xFF121826).withOpacity(0.92),
-              border: Border.all(color: Colors.white.withOpacity(0.10)),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: const [
-                _NavItem(icon: Icons.home, label: "HOME", active: true),
-                _NavItem(icon: Icons.qr_code_scanner, label: "QUEST", active: false),
-                _NavItem(icon: Icons.menu_book, label: "REVIEW", active: false),
-                _NavItem(icon: Icons.local_fire_department, label: "STREAKS", active: false),
-              ],
-            ),
+        child: Container(
+          height: 62,
+          decoration: BoxDecoration(
+            color: const Color(0xFF121826),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _NavItem(
+                icon: Icons.home,
+                label: "HOME",
+                active: currentIndex == 0,
+                onTap: () => _navigate(context, 0),
+              ),
+              _NavItem(
+                icon: Icons.qr_code_scanner,
+                label: "QUEST",
+                active: currentIndex == 1,
+                onTap: () => _navigate(context, 1),
+              ),
+              _NavItem(
+                icon: Icons.menu_book,
+                label: "LEARN",
+                active: currentIndex == 2,
+                onTap: () => _navigate(context, 2),
+              ),
+              _NavItem(
+                icon: Icons.local_fire_department,
+                label: "STREAK",
+                active: currentIndex == 3,
+                onTap: () => _navigate(context, 3),
+              ),
+            ],
           ),
         ),
       ),
@@ -797,19 +918,37 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
+  final VoidCallback onTap;
 
-  const _NavItem({required this.icon, required this.label, required this.active});
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final color = active ? const Color(0xFFE1B04A) : Colors.white70;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: color),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w800, color: color)),
-      ],
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 1.1,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
