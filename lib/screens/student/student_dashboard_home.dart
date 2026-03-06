@@ -104,32 +104,57 @@ void _subscribeToProfile() {
           .eq('id', user.id)
           .single();
 
-      // Fetch quests
-      final questRes = await _supabase
-          .from('practical_quests')
-          .select('id, code, title, description, xp_reward, due_at, is_active')
-          .eq('is_active', true);
+// Fetch quests + submissions
+final questRes = await _supabase
+    .from('practical_quests')
+    .select('''
+      id,
+      code,
+      title,
+      description,
+      xp_reward,
+      due_at,
+      is_active,
+      practical_submissions(
+        status,
+        student_id
+      )
+    ''')
+    .eq('is_active', true);
 
-      final loadedQuests = (questRes as List).map((q) {
-        final statusString = q['status'] as String;
+final loadedQuests = (questRes as List).map((q) {
 
-        QuestStatus status = switch (statusString) {
-          'assigned' => QuestStatus.assigned,
-          'completed' => QuestStatus.completed,
-          'expired' => QuestStatus.expired,
-          _ => QuestStatus.locked,
-        };
-        print("XP: ${profile['xp_total']}");
-        print("Streak: ${profile['streak_count']}");
+  final submissions = q['practical_submissions'] ?? [];
 
-        return QuestItem(
-            code: q['code'] ?? '',
-            title: q['title'] ?? '',
-            subtitle: q['description'] ?? '',
-            imageAsset: '', // no image column in DB
-            status: status,
-                );
-          }).toList();
+  QuestStatus status = QuestStatus.assigned;
+
+  final studentSubmission = submissions.firstWhere(
+    (s) => s['student_id'] == userId,
+    orElse: () => null,
+  );
+
+  if (studentSubmission != null) {
+    if (studentSubmission['status'] == 'pending') {
+      status = QuestStatus.assigned; // waiting approval
+    }
+
+    if (studentSubmission['status'] == 'approved') {
+      status = QuestStatus.completed;
+    }
+  }
+
+final code = q['code'] ?? '';
+
+return QuestItem(
+  code: code,
+  title: q['title'] ?? '',
+  subtitle: q['description'] ?? '',
+  imageAsset: code == "RIVET-01"
+      ? "assets/images/rivet_steps.png"
+      : "",
+  status: code == "RIVET-01" ? QuestStatus.assigned : QuestStatus.locked,
+);
+}).toList();
 
       setState(() {
         xp = profile['xp_total'] ?? 0;
@@ -607,123 +632,106 @@ class _QuestCard extends StatelessWidget {
           border: Border.all(color: borderColor, width: 1.2),
           color: const Color(0xFF141923),
         ),
+child: Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+
+      ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+        child: SizedBox(
+          height: 108,
+          width: double.infinity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+
+              quest.imageAsset.isEmpty
+                  ? Container(
+                      color: Colors.white.withOpacity(0.06),
+                      alignment: Alignment.center,
+                      child: Icon(Icons.lock, color: Colors.white.withOpacity(0.35)),
+                    )
+                  : Image.asset(
+                      quest.imageAsset,
+                      fit: BoxFit.cover,
+                    ),
+
+              if (quest.status == QuestStatus.locked)
+                Container(
+                  color: Colors.black.withOpacity(0.65),
+                ),
+              if (quest.status == QuestStatus.locked)
+              const Center(
+                child: Icon(
+                  Icons.lock,
+                  color: Colors.white70,
+                  size: 28,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+
+    Expanded(   // ⭐ THIS FIXES THE OVERFLOW
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image area
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-              child: Stack(
-                children: [
-                  SizedBox(
-                    height: 108,
-                    width: double.infinity,
-                    child: Image.network(
-                      quest.imageAsset,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: Colors.white.withOpacity(0.06),
-                        alignment: Alignment.center,
-                        child: Icon(Icons.image, color: Colors.white.withOpacity(0.35)),
-                      ),
-                    ),
-                  ),
 
-                  // Blur overlay if locked
-                  if (isLocked)
-                    Positioned.fill(
-                      child: Container(color: Colors.black.withOpacity(0.45)),
-                    ),
-
-                  // Gradient fade bottom
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.65),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Status badge
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: _StatusPill(status: quest.status),
-                  ),
-
-                  // Completed check
-                  if (isCompleted)
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.55),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: const Color(0xFF3DDC84).withOpacity(0.8)),
-                        ),
-                        child: const Icon(Icons.check, size: 16, color: Color(0xFF3DDC84)),
-                      ),
-                    ),
-
-                  // Lock icon
-                  if (isLocked)
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.55),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white.withOpacity(0.18)),
-                        ),
-                        child: Icon(Icons.lock, size: 16, color: Colors.white.withOpacity(0.8)),
-                      ),
-                    ),
-                ],
+            Text(
+              quest.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
               ),
             ),
 
-            // Text area
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(quest.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 4),
-                  Text(
-                    quest.subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        quest.code,
-                        style: TextStyle(fontSize: 11, letterSpacing: 1.1, color: Colors.white.withOpacity(0.55)),
-                      ),
-                      const Spacer(),
-                      Icon(
-                        Icons.chevron_right,
-                        color: onTap == null ? Colors.white.withOpacity(0.25) : Colors.white.withOpacity(0.65),
-                      ),
-                    ],
-                  ),
-                ],
+            const SizedBox(height: 4),
+
+            Text(
+              quest.subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withOpacity(0.6),
               ),
+            ),
+
+            const Spacer(),
+
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    quest.code,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      letterSpacing: 1.1,
+                      color: Colors.white.withOpacity(0.55),
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: onTap == null
+                      ? Colors.white.withOpacity(0.25)
+                      : Colors.white.withOpacity(0.65),
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    ),
+  ],
+),
       ),
     );
   }

@@ -15,12 +15,14 @@ dependencies:
     sdk: flutter
   shared_preferences: ^2.2.3
   supabase_flutter: ^2.12.0
+  image_picker: ^1.0.7
   mobile_scanner: ^3.5.2
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+    
 
   flutter_lints: ^3.0.0
 
@@ -33,3 +35,9 @@ flutter:
     - assets/images/plane.png
     - assets/images/logo.png
     - assets/images/icon-logo.png
+    - assets/images/rivet_steps.png
+    - assets/images/rivet_step1_safety.png
+    - assets/images/rivet_step2_identify.png
+    - assets/images/rivet_step3_center_punch.png
+    - assets/images/rivet_step4_drill.png
+    - assets/images/rivet_step5_inspect.png
