@@ -128,15 +128,6 @@ class _SplashScreenState extends State<SplashScreen>
                                   fit: BoxFit.contain,
                                 ),
                                 const SizedBox(height: 24),
-                                const Text(
-                                  "One Day or Day One.",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    letterSpacing: 3,
-                                    color: Colors.white70,
-                                  ),
-                                ),
                               ],
                             ),
                           ),

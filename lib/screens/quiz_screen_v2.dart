@@ -71,35 +71,44 @@ class _QuizScreenV2State extends State<QuizScreenV2> {
   }
 }
 
-  Future<void> _finish(int total) async {
-    final scorePct = total == 0 ? 0 : ((_correctCount / total) * 100).round();
+Future<void> _finish(int total) async {
+  final scorePct =
+      total == 0 ? 0 : ((_correctCount / total) * 100).round();
 
-    await _service.upsertLessonProgress(
-      lessonId: widget.lessonId,
-      status: 'completed',
-      progressPct: scorePct,
-    );
+  // ✅ NEW RULE: must be 100% correct
+  final bool passed = _correctCount == total;
 
-    if (!mounted) return;
+  // ✅ Always update lesson_progress (no more partial states)
+  await _service.upsertLessonProgress(
+    lessonId: widget.lessonId,
+    status: passed ? 'completed' : 'incomplete',
+    progressPct: passed ? 100 : 0,
+  );
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text('Quiz Completed'),
-        content: Text('Score: $scorePct% ($_correctCount/$total)'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // dialog
-              Navigator.pop(context); // quiz screen
-            },
-            child: const Text('Done'),
-          ),
-        ],
+  if (!mounted) return;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AlertDialog(
+      title: Text(passed ? 'Quiz Passed 🎉' : 'Quiz Not Passed'),
+      content: Text(
+        'Score: $scorePct% ($_correctCount/$total)\n\n'
+        '${passed ? "Lesson completed." : "You must score 100% to complete this lesson."}',
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+          child: const Text('Done'),
+        ),
+      ],
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {

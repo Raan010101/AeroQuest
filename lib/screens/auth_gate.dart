@@ -2,10 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'student_dashboard.dart';
 import 'lecturer_dashboard.dart';
 import 'splash_screen.dart';
-import 'login_screen.dart'; // <-- change this to your real file
+import 'student/student_shell.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -19,7 +18,6 @@ class _AuthGateState extends State<AuthGate> {
   late final StreamSubscription<AuthState> _authSub;
 
   Session? _session;
-  bool _loading = true;
 
   @override
   void initState() {
@@ -27,13 +25,11 @@ class _AuthGateState extends State<AuthGate> {
 
     // initial session
     _session = supabase.auth.currentSession;
-    _loading = false;
 
     // listen for changes
     _authSub = supabase.auth.onAuthStateChange.listen((data) {
-      setState(() {
-        _session = data.session;
-      });
+      if (!mounted) return;
+      setState(() => _session = data.session);
     });
   }
 
@@ -44,58 +40,89 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<Map<String, dynamic>> _getProfile(String userId) async {
-    // Trigger creates profiles, but just in case it didn't:
-    final res = await supabase.from('profiles').select().eq('id', userId).maybeSingle();
+    final res = await supabase
+        .from('profiles')
+        .select('id, name, id_number, role')
+        .eq('id', userId)
+        .maybeSingle();
 
     if (res != null) return res;
 
-    // Create minimal profile if missing (RLS allows insert own)
+    // If profile is missing, create a minimal one.
+    // (This is just a safety net. Your Register screen should normally create it.)
     final user = supabase.auth.currentUser!;
     final inserted = await supabase
         .from('profiles')
         .insert({
           'id': userId,
-          'email': user.email,
           'role': 'student',
+          'name': user.userMetadata?['full_name'] ?? 'Student',
+          // keep email internal if you still store it in profiles:
+          'email': user.email,
         })
-        .select()
+        .select('id, name, id_number, role')
         .single();
 
     return inserted;
   }
 
-@override
-Widget build(BuildContext context) {
-  // Not logged in -> show welcome screen (login/register)
-  if (_session == null) return const SplashScreen();
+  @override
+  Widget build(BuildContext context) {
+    // If no session -> show splash
+    if (_session == null) {
+      return const SplashScreen();
+    }
 
-  // Logged in -> fetch profile -> route
-  return FutureBuilder<Map<String, dynamic>>(
-    future: _getProfile(_session!.user.id),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState != ConnectionState.done) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
-      }
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _getProfile(_session!.user.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _SessionLoadingScreen();
+        }
 
-      if (snapshot.hasError) {
-        return Scaffold(
-          body: Center(
-            child: Text(
-              'Profile load failed: ${snapshot.error}',
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
-      }
+        // If profile load fails, session is invalid -> sign out
+        if (snapshot.hasError || !snapshot.hasData) {
+          supabase.auth.signOut();
+          return const SplashScreen();
+        }
 
-      final profile = snapshot.data!;
-      final role = (profile['role'] ?? 'student') as String;
+        final profile = snapshot.data!;
+        final role = (profile['role'] ?? 'student').toString();
 
-      if (role == 'lecturer') return const LecturerDashboard();
-      return const StudentDashboard();
-    },
-  );
+        // ✅ Role lock
+        if (role == 'lecturer') {
+          return const LecturerDashboard();
+        }
+
+        if (role == 'student') {
+          return StudentShell(
+            name: (profile['name'] ?? 'Student').toString(),
+            idNumber: (profile['id_number'] ?? '').toString(),
+            role: role,
+          );
+        }
+
+        // Unknown role -> sign out
+        supabase.auth.signOut();
+        return const SplashScreen();
+      },
+    );
+  }
 }
+
+class _SessionLoadingScreen extends StatelessWidget {
+  const _SessionLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: SizedBox(
+          height: 28,
+          width: 28,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
 }

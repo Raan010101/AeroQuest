@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/routes.dart';
 
+// ✅ Make this GLOBAL (not inside main)
+final RouteObserver<PageRoute> routeObserver =
+    RouteObserver<PageRoute>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -13,6 +17,7 @@ Future<void> main() async {
   runApp(const AeroQuestApp());
 }
 
+
 class AeroQuestApp extends StatelessWidget {
   const AeroQuestApp({super.key});
 
@@ -20,7 +25,9 @@ class AeroQuestApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      initialRoute: AppRoutes.root,
       onGenerateRoute: AppRoutes.generateRoute,
+      navigatorObservers: [routeObserver], // ✅ Works now
     );
   }
 }

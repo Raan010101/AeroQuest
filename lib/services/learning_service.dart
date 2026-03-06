@@ -23,6 +23,18 @@ class LearningService {
 
     return (res as List).cast<Map<String, dynamic>>();
   }
+  Future<Map<String, dynamic>?> getLessonProgress(String lessonId) async {
+  final user = Supabase.instance.client.auth.currentUser;
+
+  final data = await Supabase.instance.client
+      .from('lesson_progress')
+      .select()
+      .eq('lesson_id', lessonId)
+      .eq('user_id', user!.id)
+      .maybeSingle();
+
+  return data;
+}
 
   Future<List<Map<String, dynamic>>> fetchQuestions(String lessonId) async {
     final res = await _supabase
@@ -75,17 +87,21 @@ class LearningService {
     }, onConflict: 'user_id,lesson_id');
   }
 
-  Future<Map<String, Map<String, dynamic>>> fetchProgressForLessons(
-    List<String> lessonIds,
-  ) async {
-    if (lessonIds.isEmpty) return {};
+Future<Map<String, Map<String, dynamic>>> fetchProgressForLessons(
+  List<String> lessonIds,
+) async {
+  if (lessonIds.isEmpty) return {};
 
-    final res = await _supabase
-        .from('lesson_progress')
-        .select('lesson_id, status, progress_pct, updated_at')
-        .inFilter('lesson_id', lessonIds);
+  final user = _supabase.auth.currentUser;
+  if (user == null) return {};
 
-    final list = (res as List).cast<Map<String, dynamic>>();
-    return {for (final row in list) row['lesson_id'] as String: row};
-  }
+  final res = await _supabase
+      .from('lesson_progress')
+      .select('lesson_id, status, progress_pct, updated_at')
+      .eq('user_id', user.id) // 🔥 IMPORTANT FIX
+      .inFilter('lesson_id', lessonIds);
+
+  final list = (res as List).cast<Map<String, dynamic>>();
+  return {for (final row in list) row['lesson_id'] as String: row};
+}
 }
