@@ -33,21 +33,21 @@ https://github.com/Raan010101/AeroQuest/releases/download/v1.0/aeroquest_v1.apk
 
 ## Screenshots
 
-| Dashboard | Quest |
+| Dashboard | Splash Screen |
 |----------|------|
-| ![](screenshots/dashboard.png) | ![](screenshots/quest.png) |
-
-| Quiz Homepage | Quiz Results |
-|---------------|-------------|
-| ![](screenshots/quiz_homepage.png) | ![](screenshots/quiz_results.png) |
-
-| Submit Quest | Splash Screen |
-|-------------|--------------|
-| ![](screenshots/submit-quest.png) | ![](screenshots/splash-screen.png) |
+| ![](screenshots/dashboard.png) | ![](screenshots/splash-screen.png) |
 
 | Login | Learning Module |
 |------|----------------|
 | ![](screenshots/login.png) | ![](screenshots/learn-module.png) |
+
+| Quiz Homepage | Quiz Results |
+|---------------|-------------|
+| ![](screenshots/quiz_homepage.png) |  ![](screenshots/quest.png) |
+
+| Submit Quest |
+|-------------|--------------|
+| ![](screenshots/submit-quest.png) |
 
 | Daily Questions |
 |----------------|
