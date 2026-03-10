@@ -36,7 +36,7 @@ https://github.com/Raan010101/AeroQuest/releases/download/v1.0/aeroquest_v1.apk
 <p align="center">
 
 <img src="screenshots/dashboard.png" width="220"/>
-<img src="screenshots/splash-screen.png" width="220"/>
+<img src="screenshots/splash-scree.png" width="220"/>
 <img src="screenshots/login.png" width="220"/>
 
 </p>
