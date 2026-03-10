@@ -1,30 +1,32 @@
-# aeroquest_application_1
+# AeroQuest
 
-A new Flutter project.
+A gamified aviation learning platform built with Flutter and Supabase.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application that follows the
-[simple app state management
-tutorial](https://flutter.dev/docs/development/data-and-backend/state-mgmt/simple).
+• Quiz-based learning modules  
+• QR code practical quests  
+• XP reward and ranking system  
+• Daily streak challenges  
+• Real-time dashboard updates  
 
-For help getting started with Flutter development, view the
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Tech Stack
 
-## Assets
+Flutter  
+Supabase  
+PostgreSQL  
+Realtime subscriptions  
+QR scanning
 
-The `assets` directory houses images, fonts, and any other files you want to
-include with your application.
+## Demo
 
-The `assets/images` directory contains [resolution-aware
-images](https://flutter.dev/docs/development/ui/assets-and-images#resolution-aware).
+## Demo
 
-## Localization
+Watch the demo video here:
+(https://youtube.com/shorts/45r5AQWM5Eg?feature=share)
 
-This project generates localized messages based on arb files found in
-the `lib/src/localization` directory.
 
-To support additional languages, please visit the tutorial on
-[Internationalizing Flutter
-apps](https://flutter.dev/docs/development/accessibility-and-localization/internationalization)
+## APK
+
+Download the Android APK:
+https://github.com/Raan010101/AeroQuest/releases/download/v1.0/aeroquest_v1.apk
