@@ -99,8 +99,8 @@ Future<void> _finish(int total) async {
       actions: [
         TextButton(
           onPressed: () {
-            Navigator.pop(context);
-            Navigator.pop(context);
+Navigator.pop(context); // close dialog
+Navigator.pop(context, true); // return to previous screen
           },
           child: const Text('Done'),
         ),

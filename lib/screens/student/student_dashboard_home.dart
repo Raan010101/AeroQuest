@@ -77,15 +77,17 @@ void _subscribeToProfile() {
         column: 'id',
         value: user.id,
       ),
-      callback: (payload) {
-        final data = payload.newRecord;
+callback: (payload) {
+  if (!mounted) return;
 
-        setState(() {
-          xp = data['xp_total'] ?? xp;
-          streakDays = data['streak_count'] ?? streakDays;
-          badgeLabel = data['rank_title'] ?? badgeLabel;
-        });
-      },
+  final data = payload.newRecord;
+
+  setState(() {
+    xp = data['xp_total'] ?? xp;
+    streakDays = data['streak_count'] ?? streakDays;
+    badgeLabel = data['rank_title'] ?? badgeLabel;
+  });
+},
     )
     ..subscribe();
 }
@@ -155,6 +157,15 @@ return QuestItem(
   status: code == "RIVET-01" ? QuestStatus.assigned : QuestStatus.locked,
 );
 }).toList();
+loadedQuests.sort((a, b) {
+  if (a.status == QuestStatus.assigned && b.status != QuestStatus.assigned) {
+    return -1;
+  }
+  if (b.status == QuestStatus.assigned && a.status != QuestStatus.assigned) {
+    return 1;
+  }
+  return 0;
+});
 
       setState(() {
         xp = profile['xp_total'] ?? 0;
