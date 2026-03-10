@@ -20,8 +20,10 @@ QR scanning
 
 ## Demo
 
-Watch the demo video here: (YouTube link)
+Watch the demo video here:
+https://youtube.com/your-demo-video
 
 ## APK
 
-Download the Android APK here.
+Download the Android APK:
+https://github.com/Raan010101/AeroQuest/releases/download/v1.0/aeroquest_v1.apk
